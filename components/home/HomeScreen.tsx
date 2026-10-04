@@ -10,7 +10,7 @@ import { TodayRemainingHero } from "./TodayRemainingHero";
 import { BudgetSetupPrompt } from "./BudgetSetupPrompt";
 import { WeightCard } from "./WeightCard";
 import { BodyFatCard } from "./BodyFatCard";
-import { BudgetSheet } from "./BudgetSheet";
+import { BudgetSheet } from "@/components/shared/BudgetSheet";
 
 export function HomeScreen() {
   const summary = useHomeSummary();

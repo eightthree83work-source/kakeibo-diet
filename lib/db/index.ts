@@ -4,3 +4,4 @@ export * from "./transactions";
 export * from "./dailyLogs";
 export * from "./settings";
 export * from "./categories";
+export * from "./backup";
