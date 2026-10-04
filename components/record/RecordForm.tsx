@@ -5,6 +5,7 @@ import { NumPad } from "./NumPad";
 import { TypeButtons } from "./TypeButtons";
 import { ChipSelector } from "./ChipSelector";
 import { DateChips } from "./DateChips";
+import { BudgetSetupChip } from "./BudgetSetupChip";
 import { useCategories } from "@/lib/hooks/useCategories";
 import { useSettings } from "@/lib/hooks/useSettings";
 import { useTodayRemaining } from "@/lib/hooks/useTodayRemaining";
@@ -21,6 +22,8 @@ export function RecordForm() {
   const settings = useSettings();
   const todayRemaining = useTodayRemaining();
   const remaining = describeTodayRemaining(todayRemaining);
+  // 目標予算が未設定のときは、「今日あと使える額」を出さない（0円の予算では必ず「使いすぎ」になってしまう）
+  const budgetUnset = settings !== undefined && settings.monthlyBudget <= 0;
 
   const [amountStr, setAmountStr] = useState("");
   const [categoryId, setCategoryId] = useState<string | undefined>();
@@ -88,16 +91,22 @@ export function RecordForm() {
 
   return (
     <div className="flex flex-1 flex-col px-4 pt-5 pb-3 gap-4 relative">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-ink-soft">{remaining.label}</p>
-        <p
-          className={`font-heading text-2xl font-bold ${
-            remaining.over ? "text-waste" : "text-mint-dark"
-          }`}
-        >
-          {remaining.amountText}
-        </p>
-      </div>
+      {budgetUnset ? (
+        <div className="flex items-center">
+          <BudgetSetupChip />
+        </div>
+      ) : (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-ink-soft">{remaining.label}</p>
+          <p
+            className={`font-heading text-2xl font-bold ${
+              remaining.over ? "text-waste" : "text-mint-dark"
+            }`}
+          >
+            {remaining.amountText}
+          </p>
+        </div>
+      )}
 
       <div className="flex flex-col items-center gap-2 py-2">
         <p className="font-heading text-5xl font-bold text-ink tabular-nums">
@@ -168,14 +177,24 @@ export function RecordForm() {
             {celebrationDate ? `${labelForDateKey(celebrationDate)}の分を` : ""}
             {ENTRY_TYPE_LABEL[celebration]}として記録しました
           </p>
-          <p className="text-sm text-ink-soft">{remaining.label}</p>
-          <p
-            className={`font-heading text-3xl font-bold ${
-              remaining.over ? "text-waste" : "text-mint-dark"
-            }`}
-          >
-            {remaining.amountText}
-          </p>
+          {budgetUnset ? (
+            <p className="px-8 text-center text-sm text-ink-soft">
+              目標予算を設定すると、
+              <br />
+              「今日あと使える額」がわかります
+            </p>
+          ) : (
+            <>
+              <p className="text-sm text-ink-soft">{remaining.label}</p>
+              <p
+                className={`font-heading text-3xl font-bold ${
+                  remaining.over ? "text-waste" : "text-mint-dark"
+                }`}
+              >
+                {remaining.amountText}
+              </p>
+            </>
+          )}
         </div>
       )}
     </div>
