@@ -8,6 +8,7 @@ import { DailyChart } from "./DailyChart";
 import { WasteRateTrend } from "./WasteRateTrend";
 import { TopWasteList } from "./TopWasteList";
 import { CategoryBreakdown } from "./CategoryBreakdown";
+import { ShareButton } from "./ShareButton";
 
 export function ReportScreen() {
   const [weeksBack, setWeeksBack] = useState(0);
@@ -35,6 +36,7 @@ export function ReportScreen() {
         onChange={setWeeksBack}
       />
       <WeekSummaryCard week={current} comparison={comparison} />
+      <ShareButton weeksBack={weeksBack} disabled={!hasRecords} />
       {hasRecords && <DailyChart days={current.days} />}
       <WasteRateTrend weeks={trend} />
       {hasRecords && (

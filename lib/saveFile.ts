@@ -9,7 +9,7 @@ import { isIosDevice } from "@/lib/pwa/installHint";
 export type SaveFileResult = "shared" | "downloaded" | "cancelled" | "needs-tap";
 
 /** iPhone / iPad か、ホーム画面から起動したアプリ（standalone）か */
-function prefersShareSheet(): boolean {
+export function prefersShareSheet(): boolean {
   const nav = navigator as Navigator & { standalone?: boolean };
   return (
     isIosDevice(nav.userAgent, nav.maxTouchPoints) ||
@@ -18,7 +18,7 @@ function prefersShareSheet(): boolean {
   );
 }
 
-function download(file: File): void {
+export function download(file: File): void {
   const url = URL.createObjectURL(file);
   const link = document.createElement("a");
   link.href = url;
