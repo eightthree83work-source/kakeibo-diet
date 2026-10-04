@@ -9,6 +9,7 @@ import { useSettings } from "@/lib/hooks/useSettings";
 import { useTodayRemaining } from "@/lib/hooks/useTodayRemaining";
 import { addTransaction, markNoSpendDay } from "@/lib/db";
 import { toDateKey } from "@/lib/domain/date";
+import { describeTodayRemaining } from "@/lib/format";
 import { ENTRY_TYPE_LABEL, PAYMENT_METHOD_LABEL, type EntryType, type PaymentMethod } from "@/types";
 
 const MAX_DIGITS = 8;
@@ -18,6 +19,7 @@ export function RecordForm() {
   const categories = useCategories();
   const settings = useSettings();
   const todayRemaining = useTodayRemaining();
+  const remaining = describeTodayRemaining(todayRemaining);
 
   const [amountStr, setAmountStr] = useState("");
   const [categoryId, setCategoryId] = useState<string | undefined>();
@@ -81,17 +83,13 @@ export function RecordForm() {
   return (
     <div className="flex flex-1 flex-col px-4 pt-5 pb-3 gap-4 relative">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-ink-soft">今日あと使える額</p>
+        <p className="text-sm text-ink-soft">{remaining.label}</p>
         <p
           className={`font-heading text-2xl font-bold ${
-            todayRemaining !== undefined && todayRemaining < 0
-              ? "text-waste"
-              : "text-mint-dark"
+            remaining.over ? "text-waste" : "text-mint-dark"
           }`}
         >
-          {todayRemaining === undefined
-            ? "---"
-            : `¥${yen.format(Math.round(todayRemaining))}`}
+          {remaining.amountText}
         </p>
       </div>
 
@@ -162,17 +160,13 @@ export function RecordForm() {
           <p className="font-heading text-lg font-bold text-ink">
             {ENTRY_TYPE_LABEL[celebration]}として記録しました
           </p>
-          <p className="text-sm text-ink-soft">今日あと使える額</p>
+          <p className="text-sm text-ink-soft">{remaining.label}</p>
           <p
             className={`font-heading text-3xl font-bold ${
-              todayRemaining !== undefined && todayRemaining < 0
-                ? "text-waste"
-                : "text-mint-dark"
+              remaining.over ? "text-waste" : "text-mint-dark"
             }`}
           >
-            {todayRemaining === undefined
-              ? "---"
-              : `¥${yen.format(Math.round(todayRemaining))}`}
+            {remaining.amountText}
           </p>
         </div>
       )}
