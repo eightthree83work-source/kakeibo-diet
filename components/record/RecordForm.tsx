@@ -4,11 +4,12 @@ import { useEffect, useState } from "react";
 import { NumPad } from "./NumPad";
 import { TypeButtons } from "./TypeButtons";
 import { ChipSelector } from "./ChipSelector";
+import { DateChips } from "./DateChips";
 import { useCategories } from "@/lib/hooks/useCategories";
 import { useSettings } from "@/lib/hooks/useSettings";
 import { useTodayRemaining } from "@/lib/hooks/useTodayRemaining";
 import { addTransaction, markNoSpendDay } from "@/lib/db";
-import { toDateKey } from "@/lib/domain/date";
+import { labelForDateKey, toDateKey } from "@/lib/domain/date";
 import { describeTodayRemaining } from "@/lib/format";
 import { ENTRY_TYPE_LABEL, PAYMENT_METHOD_LABEL, type EntryType, type PaymentMethod } from "@/types";
 
@@ -24,10 +25,13 @@ export function RecordForm() {
   const [amountStr, setAmountStr] = useState("");
   const [categoryId, setCategoryId] = useState<string | undefined>();
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | undefined>();
+  /** null は「今日」。記録後は常に今日へ戻す */
+  const [pickedDate, setPickedDate] = useState<string | null>(null);
   const [memoOpen, setMemoOpen] = useState(false);
   const [memo, setMemo] = useState("");
   const [saving, setSaving] = useState(false);
   const [celebration, setCelebration] = useState<EntryType | null>(null);
+  const [celebrationDate, setCelebrationDate] = useState<string | null>(null);
 
   useEffect(() => {
     if (!celebration) return;
@@ -58,7 +62,7 @@ export function RecordForm() {
     setSaving(true);
     try {
       await addTransaction({
-        date: toDateKey(new Date()),
+        date: pickedDate ?? toDateKey(new Date()),
         amount,
         type,
         categoryId: activeCategoryId,
@@ -69,6 +73,8 @@ export function RecordForm() {
       setAmountStr("");
       setMemo("");
       setMemoOpen(false);
+      setCelebrationDate(pickedDate);
+      setPickedDate(null);
       setCelebration(type);
     } finally {
       setSaving(false);
@@ -100,6 +106,7 @@ export function RecordForm() {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
+        <DateChips value={pickedDate} onChange={setPickedDate} />
         <ChipSelector
           prefixLabel="カテゴリ"
           placeholder="未選択"
@@ -158,6 +165,7 @@ export function RecordForm() {
             {celebration === "waste" ? "😅" : "✅"}
           </div>
           <p className="font-heading text-lg font-bold text-ink">
+            {celebrationDate ? `${labelForDateKey(celebrationDate)}の分を` : ""}
             {ENTRY_TYPE_LABEL[celebration]}として記録しました
           </p>
           <p className="text-sm text-ink-soft">{remaining.label}</p>

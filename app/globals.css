@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  color-scheme: light dark;
   /* ミントダイエット配色 */
   --color-mint: #3dbd93;
   --color-mint-dark: #2a9b77;
