@@ -4,6 +4,7 @@ import { useRef, useState, useSyncExternalStore } from "react";
 import { format } from "date-fns";
 import { createBackup, type ImportResult } from "@/lib/db";
 import { parseBackup, type BackupFile } from "@/lib/domain/backup";
+import { saveFile } from "@/lib/saveFile";
 import { ImportSheet } from "./ImportSheet";
 
 const LAST_EXPORT_KEY = "kakeibo-diet:lastExportAt";
@@ -45,38 +46,43 @@ export function BackupSection() {
     lastExportDate && !Number.isNaN(lastExportDate.getTime()) ? lastExportDate : null;
   const [message, setMessage] = useState<{ text: string; isError: boolean } | null>(null);
   const [pending, setPending] = useState<BackupFile | null>(null);
+  const [readyFile, setReadyFile] = useState<{ file: File; count: number } | null>(null);
 
   async function handleExport() {
     try {
       const backup = await createBackup();
-      const blob = new Blob([JSON.stringify(backup, null, 2)], {
-        type: "application/json",
-      });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `kakeibo-diet-${format(new Date(), "yyyyMMdd-HHmm")}.json`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-
-      try {
-        window.localStorage.setItem(LAST_EXPORT_KEY, new Date().toISOString());
-      } catch {
-        // 保存できなくても書き出し自体は成功している
-      }
-      window.dispatchEvent(new Event(LAST_EXPORT_EVENT));
-      setMessage({
-        text: `書き出しました（記録${backup.data.transactions.length}件）`,
-        isError: false,
-      });
+      const file = new File(
+        [JSON.stringify(backup, null, 2)],
+        `kakeibo-diet-${format(new Date(), "yyyyMMdd-HHmm")}.json`,
+        { type: "application/json" }
+      );
+      await save(file, backup.data.transactions.length);
     } catch (e) {
       setMessage({
         text: `書き出せませんでした（${e instanceof Error ? e.message : e}）`,
         isError: true,
       });
     }
+  }
+
+  /** ファイルを保存し、結果に応じて表示を更新する */
+  async function save(file: File, count: number) {
+    const result = await saveFile(file);
+    if (result === "needs-tap") {
+      // 共有シートが開けなかったので、準備したファイルを、もう一度のタップで保存してもらう
+      setReadyFile({ file, count });
+      setMessage(null);
+      return;
+    }
+    setReadyFile(null);
+    if (result === "cancelled") return;
+    try {
+      window.localStorage.setItem(LAST_EXPORT_KEY, new Date().toISOString());
+    } catch {
+      // 保存できなくても書き出し自体は成功している
+    }
+    window.dispatchEvent(new Event(LAST_EXPORT_EVENT));
+    setMessage({ text: `書き出しました（記録${count}件）`, isError: false });
   }
 
   async function handleFile(file: File | undefined) {
@@ -111,6 +117,15 @@ export function BackupSection() {
         >
           データを書き出す（JSON）
         </button>
+        {readyFile && (
+          <button
+            type="button"
+            onClick={() => void save(readyFile.file, readyFile.count)}
+            className="h-14 rounded-2xl bg-yellow font-bold text-ink shadow-sm active:scale-95 transition-transform"
+          >
+            📥 ファイルを保存する（もう一度タップ）
+          </button>
+        )}
         <button
           type="button"
           onClick={() => fileInput.current?.click()}

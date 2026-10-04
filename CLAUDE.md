@@ -62,7 +62,9 @@ CSV取り込み、アカウント・同期、通知、広告
 
 ## 実装順
 
-①記録 → ②ホーム → ③週次レポート → ④設定 → ⑤シェア画像 → ⑥家計体型診断 → ⑦PWA
+①記録 → ②ホーム → ③週次レポート → ④設定 → ⑦PWA → ⑤シェア画像 → ⑥家計体型診断
+
+**⑦PWAは⑤より先に実施する**（iOS の Safari は、ホーム画面に追加していないサイトのデータを消すことがあり、実データを守るため）。番号は当初の仕様のまま、実施の順番だけ入れ替えている。
 
 各ステップ完了時にgitコミットし、動作確認方法を説明する。
 
@@ -102,3 +104,16 @@ CSV取り込み、アカウント・同期、通知、広告
 - バックアップ形式を変えるときは `BACKUP_VERSION` を上げ、古い版のファイルも読み込めるようにする
 - 本番URLと `localhost` / LAN の開発サーバーは**別オリジンなので、IndexedDB は別々**。データを移すときは JSON の書き出し→復元を使う
 - iOS Safari は、ホーム画面に追加していないサイトのデータを、一定期間使わないと消すことがある。ステップ⑦（PWA）まではこまめにバックアップする
+## PWA（ステップ⑦）の判断と注意
+
+- Serwist は Next.js 16 の標準ビルド（Turbopack）に合わせて `@serwist/turbopack` を使う（`@serwist/next` は webpack 前提）。Service Worker の本体は `app/sw.ts`、配信とキャッシュ対象の指定は `app/serwist/[path]/route.ts`、登録は `app/layout.tsx` の `SerwistProvider`。マニフェストは `app/manifest.ts`
+- Service Worker は**本番ビルドでだけ有効**（開発中は `SerwistProvider` の `disable`）。古いキャッシュが残って開発の確認が紛らわしくなるのを避けるため。PWA の確認は `npm run build && npm run start` で行う
+- オフラインで開けるよう、`/` `/home` `/report` `/settings` `/offline` を事前に保存する。新しい画面を足したら `route.ts` の `PRECACHED_PAGES` にも足す。保存されていないURLをオフラインで開くと `/offline` を表示する
+- フォント（Noto Sans JP は約380個に分割され、全部で約10MB）は事前保存せず、使われたものだけを実行時にキャッシュする。事前保存の対象は `route.ts` の `globPatterns` で指定している（初期設定は `public/` 全体を含み、フォントは含まないため）
+- アイコンとスプラッシュ画面（iOS）は `npm run icons`（`scripts/generate-icons.mjs`）で生成して**コミットする**（ビルド時には生成しない）。デザインは「ミント地に白いコイン＋体重計の目盛り」で、文字は使わない（フォント非依存）。スプラッシュは機種ごとの画面サイズぴったりの画像が必要で、機種の一覧は `lib/pwa/splashScreens.mjs`。新機種が出たらここへ足して `npm run icons`
+- 「ホーム画面に追加」の案内（`components/home/InstallHint.tsx`）は、iPhone / iPad で、ホーム画面から起動しておらず、閉じていないときだけ、ホームの下のほうに出す。✕で閉じたら `localStorage` に記録して二度と出さない。Android や PC には出さない（ブラウザ自身のインストール案内があるため）
+- **iOS では、ホーム画面に追加したアプリと Safari のタブでデータ（IndexedDB）が別々になる**。追加前に Safari で記録していたデータは、設定の「書き出し」→ アプリ側で「復元」で移す
+- ファイルの書き出し（`lib/saveFile.ts`）は、iPhone やホーム画面のアプリでは共有シート（`navigator.share`）を使う。`<a download>` だとファイルのプレビューがアプリの画面を乗っ取って戻れなくなることがあるため。共有シートはタップ直後にしか開けないので、拒否されたら「もう一度タップ」のボタンを出す。⑤のシェア画像も `saveFile` を使う
+- 起動時に `navigator.storage.persist()` を依頼する（`AppInit`）。許可されるかは端末次第なので、バックアップを促す表示は引き続き残す
+- 検証メモ: オフライン + Service Worker の状態で、ブラウザ自動操作（Playwright）の `locator`（`getByRole` / `locator().innerText()` など）を使うと、ツール側の副作用で `goto` の画面遷移が巻き戻る。アプリの不具合ではない。同じ読み取りを `page.evaluate` で行うと再現しない
+- 記録画面の上部は、目標予算が未設定（0）のとき、何か記録すると「今日は使いすぎ ¥N」と赤字になる。ホーム画面は未設定時に案内を出す仕様だが、記録画面は未対応（既知の未解決）

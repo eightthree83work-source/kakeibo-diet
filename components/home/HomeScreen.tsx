@@ -11,6 +11,7 @@ import { BudgetSetupPrompt } from "./BudgetSetupPrompt";
 import { WeightCard } from "./WeightCard";
 import { BodyFatCard } from "./BodyFatCard";
 import { BudgetSheet } from "@/components/shared/BudgetSheet";
+import { InstallHint } from "./InstallHint";
 
 export function HomeScreen() {
   const summary = useHomeSummary();
@@ -80,6 +81,8 @@ export function HomeScreen() {
         wasteRate={summary.wasteRate}
         amountByType={summary.amountByType}
       />
+
+      <InstallHint />
 
       {/* 片手で操作しやすいよう、主なボタンは画面の下のほうにまとめる */}
       <div className="mt-2 flex flex-col gap-2">
