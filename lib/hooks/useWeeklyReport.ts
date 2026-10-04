@@ -6,13 +6,15 @@ import { getAllCategories, getSettings, getTransactionsInRange } from "@/lib/db"
 import { getLastNWeekRanges } from "@/lib/domain/weekRange";
 import {
   compareWeeks,
+  pickTopWaste,
   summarizeWeek,
+  type WasteEntry,
   type WeekComparison,
   type WeekSummary,
 } from "@/lib/domain/weeklyReport";
 
-/** 推移グラフに出す週数（選択週を含む） */
-export const TREND_WEEKS = 6;
+/** 浪費率の推移に出す週数（選択週を含む） */
+export const TREND_WEEKS = 8;
 /** 何週前まで遡れるか */
 export const MAX_WEEKS_BACK = 12;
 
@@ -21,6 +23,8 @@ export interface WeeklyReport {
   comparison: WeekComparison | null;
   /** 古い順。最後が選択週 */
   trend: WeekSummary[];
+  /** 選択週でムダが大きかった支出（上位3件） */
+  topWaste: WasteEntry[];
   categoryNames: Record<string, string>;
 }
 
@@ -44,6 +48,7 @@ export function useWeeklyReport(weeksBack: number): WeeklyReport | undefined {
       current,
       comparison: compareWeeks(current, previous),
       trend: weeks.slice(1),
+      topWaste: pickTopWaste(txs, current.range),
       categoryNames: Object.fromEntries(categories.map((c) => [c.id, c.name])),
     };
   }, [weeksBack]);

@@ -110,3 +110,22 @@ export function compareWeeks(
     wasteRateDiffPoints: (current.wasteRate - previous.wasteRate) * 100,
   };
 }
+
+export interface WasteEntry extends ReportTransaction {
+  id: string;
+  memo?: string;
+}
+
+/** `range` 内のムダ支出を金額の大きい順に `limit` 件返す。同額は日付の新しい順 */
+export function pickTopWaste(
+  transactions: WasteEntry[],
+  range: DateRange,
+  limit = 3
+): WasteEntry[] {
+  return transactions
+    .filter(
+      (t) => t.type === "waste" && t.date >= range.start && t.date <= range.end
+    )
+    .sort((a, b) => b.amount - a.amount || b.date.localeCompare(a.date))
+    .slice(0, limit);
+}

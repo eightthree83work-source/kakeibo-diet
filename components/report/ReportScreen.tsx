@@ -5,7 +5,8 @@ import { MAX_WEEKS_BACK, useWeeklyReport } from "@/lib/hooks/useWeeklyReport";
 import { WeekSwitcher } from "./WeekSwitcher";
 import { WeekSummaryCard } from "./WeekSummaryCard";
 import { DailyChart } from "./DailyChart";
-import { TrendChart } from "./TrendChart";
+import { WasteRateTrend } from "./WasteRateTrend";
+import { TopWasteList } from "./TopWasteList";
 import { CategoryBreakdown } from "./CategoryBreakdown";
 
 export function ReportScreen() {
@@ -22,7 +23,7 @@ export function ReportScreen() {
     );
   }
 
-  const { current, comparison, trend, categoryNames } = report;
+  const { current, comparison, trend, topWaste, categoryNames } = report;
   const hasRecords = current.recordCount > 0;
 
   return (
@@ -35,7 +36,10 @@ export function ReportScreen() {
       />
       <WeekSummaryCard week={current} comparison={comparison} />
       {hasRecords && <DailyChart days={current.days} />}
-      <TrendChart weeks={trend} />
+      <WasteRateTrend weeks={trend} />
+      {hasRecords && (
+        <TopWasteList entries={topWaste} categoryNames={categoryNames} />
+      )}
       <CategoryBreakdown
         categories={current.categories}
         categoryNames={categoryNames}

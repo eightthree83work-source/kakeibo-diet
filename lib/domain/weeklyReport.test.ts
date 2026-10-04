@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   compareWeeks,
+  pickTopWaste,
   summarizeWeek,
   type ReportTransaction,
+  type WasteEntry,
 } from "./weeklyReport";
 
 const range = { start: "2026-10-05", end: "2026-10-11" };
@@ -75,5 +77,34 @@ describe("compareWeeks", () => {
   it("前週に記録がなければ比較しない", () => {
     const prev = summarizeWeek([], { start: "2026-09-28", end: "2026-10-04" });
     expect(compareWeeks(summarizeWeek(txs, range), prev)).toBeNull();
+  });
+});
+
+describe("pickTopWaste", () => {
+  const entries: WasteEntry[] = [
+    { id: "a", date: "2026-10-05", amount: 300, type: "waste" },
+    { id: "b", date: "2026-10-06", amount: 900, type: "waste", memo: "ガチャ" },
+    { id: "c", date: "2026-10-07", amount: 5000, type: "necessary" },
+    { id: "d", date: "2026-10-08", amount: 600, type: "waste" },
+    { id: "e", date: "2026-10-09", amount: 100, type: "waste" },
+    { id: "f", date: "2026-10-20", amount: 9999, type: "waste" }, // 範囲外
+    { id: "g", date: "2026-10-10", amount: 600, type: "waste" },
+  ];
+
+  it("範囲内のムダだけを金額の大きい順に上位N件返す", () => {
+    expect(pickTopWaste(entries, range).map((t) => t.id)).toEqual([
+      "b",
+      "g",
+      "d",
+    ]);
+  });
+
+  it("同額なら日付の新しいものを先にする", () => {
+    const ids = pickTopWaste(entries, range, 5).map((t) => t.id);
+    expect(ids.indexOf("g")).toBeLessThan(ids.indexOf("d"));
+  });
+
+  it("ムダがなければ空配列", () => {
+    expect(pickTopWaste([entries[2]], range)).toEqual([]);
   });
 });
